@@ -1,5 +1,4 @@
-# Generate a corrected and fully robust Streamlit script for your real CSV structure
-final_streamlit_script = """
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -90,11 +89,3 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Something went wrong during processing: {e}")
-"""
-
-# Save final version
-final_path = "/mnt/data/final_streamlit_dayparting_tool.py"
-with open(final_path, "w", encoding="utf-8") as f:
-    f.write(final_streamlit_script)
-
-final_path
