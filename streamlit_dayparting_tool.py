@@ -42,8 +42,12 @@ if uploaded_file:
         df['hour'] = pd.to_datetime(df[col_map['start_time']].astype(str).str.zfill(5) + ":00", format='%H:%M:%S', errors='coerce').dt.hour
         df['impressions'] = pd.to_numeric(df[col_map['impressions']].astype(str).str.replace(',', ''), errors='coerce')
         df['clicks'] = pd.to_numeric(df[col_map['clicks']], errors='coerce')
-        df['spend'] = pd.to_numeric(df[col_map['spend']].astype(str).str.replace('[₹$,]', '', regex=True), errors='coerce')
-        df['sales'] = pd.to_numeric(df[col_map['sales']].astype(str).str.replace('[₹$,]', '', regex=True), errors='coerce')
+
+        # STRONG CLEANUP FOR CURRENCY FIELDS
+        df['spend'] = df[col_map['spend']].astype(str).str.replace(r'[₹$,A-Za-z\s]', '', regex=True).str.strip()
+        df['sales'] = df[col_map['sales']].astype(str).str.replace(r'[₹$,A-Za-z\s]', '', regex=True).str.strip()
+        df['spend'] = pd.to_numeric(df['spend'], errors='coerce')
+        df['sales'] = pd.to_numeric(df['sales'], errors='coerce')
 
         summary = df.groupby('hour').agg({
             'impressions': 'sum',
