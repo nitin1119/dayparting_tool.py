@@ -1,4 +1,5 @@
-
+# Generate a corrected and fully robust Streamlit script for your real CSV structure
+final_streamlit_script = """
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,30 +22,29 @@ if uploaded_file:
         else:
             df = pd.read_excel(uploaded_file)
 
-        # Normalize column names
-        df.columns = [clean_column(c) for c in df.columns]
+        # Normalize columns
+        df.columns = [clean_column(col) for col in df.columns]
 
-        # Flexible column mapping
+        # Column mapping
         col_map = {
-            'start time': next((c for c in df.columns if 'start time' in c), None),
+            'start_time': next((c for c in df.columns if 'start time' in c), None),
             'impressions': next((c for c in df.columns if 'impression' in c), None),
-            'clicks': next((c for c in df.columns if 'click' == c or 'clicks' in c), None),
+            'clicks': next((c for c in df.columns if 'clicks' in c or c == 'clicks'), None),
             'spend': next((c for c in df.columns if 'spend' in c), None),
             'sales': next((c for c in df.columns if 'sales' in c), None)
         }
 
         missing = [k for k, v in col_map.items() if v is None]
         if missing:
-            st.error(f"Missing required columns in file: {', '.join(missing)}")
+            st.error(f"❌ Missing required columns: {', '.join(missing)}")
             st.stop()
 
-        df['hour'] = pd.to_datetime(df[col_map['start time']], format='%H:%M:%S', errors='coerce').dt.hour
-        df['impressions'] = pd.to_numeric(df[col_map['impressions']], errors='coerce')
+        # Clean data
+        df['hour'] = pd.to_datetime(df[col_map['start_time']].astype(str).str.zfill(5) + ":00", format='%H:%M:%S', errors='coerce').dt.hour
+        df['impressions'] = pd.to_numeric(df[col_map['impressions']].astype(str).str.replace(',', ''), errors='coerce')
         df['clicks'] = pd.to_numeric(df[col_map['clicks']], errors='coerce')
-        df['spend'] = df[col_map['spend']].astype(str).replace('[₹$,]', '', regex=True)
-        df['spend'] = pd.to_numeric(df['spend'], errors='coerce')
-        df['sales'] = df[col_map['sales']].astype(str).replace('[₹$,]', '', regex=True)
-        df['sales'] = pd.to_numeric(df['sales'], errors='coerce')
+        df['spend'] = pd.to_numeric(df[col_map['spend']].astype(str).str.replace('[₹$,]', '', regex=True), errors='coerce')
+        df['sales'] = pd.to_numeric(df[col_map['sales']].astype(str).str.replace('[₹$,]', '', regex=True), errors='coerce')
 
         summary = df.groupby('hour').agg({
             'impressions': 'sum',
@@ -52,6 +52,10 @@ if uploaded_file:
             'spend': 'sum',
             'sales': 'sum'
         }).reset_index()
+
+        if summary.empty:
+            st.warning("⚠️ No data available after processing. Please check your report file.")
+            st.stop()
 
         summary['ctr (%)'] = (summary['clicks'] / summary['impressions']) * 100
         summary['cpc (₹)'] = summary['spend'] / summary['clicks'].replace(0, np.nan)
@@ -85,4 +89,12 @@ if uploaded_file:
         )
 
     except Exception as e:
-        st.error(f"Something went wrong: {e}")
+        st.error(f"Something went wrong during processing: {e}")
+"""
+
+# Save final version
+final_path = "/mnt/data/final_streamlit_dayparting_tool.py"
+with open(final_path, "w", encoding="utf-8") as f:
+    f.write(final_streamlit_script)
+
+final_path
